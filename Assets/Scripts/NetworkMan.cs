@@ -14,8 +14,8 @@ public class NetworkMan : MonoBehaviour
     {
         udp = new UdpClient();
 
-        //udp.Connect("3.130.200.122", 12345);
-        udp.Connect("localhost", 12345);
+        udp.Connect("3.130.200.122", 12345);
+        //udp.Connect("localhost", 12345);
 
         Byte[] sendBytes = Encoding.ASCII.GetBytes("connect"); // Send connect message to server
       
@@ -64,9 +64,14 @@ public class NetworkMan : MonoBehaviour
         public Player[] players;
     }
 
+    public class DroppedPlayers{
+        public Player[] players;
+    }
+
     public Message latestMessage;
     public GameState latestGameState;
     public NewPlayer newPlayer;
+    public DroppedPlayers latestDroppedPlayers;
 
     void OnReceived(IAsyncResult result){
         // this is what had been passed into BeginReceive as the second parameter:
@@ -93,6 +98,7 @@ public class NetworkMan : MonoBehaviour
                     latestGameState = JsonUtility.FromJson<GameState>(returnData);
                     break;
                 case commands.DROPPED_CLIENT:
+                    latestDroppedPlayers = JsonUtility.FromJson<DroppedPlayers>(returnData);
                     break;
                 default:
                     Debug.Log("Error");
@@ -113,6 +119,7 @@ public class NetworkMan : MonoBehaviour
 
     void SpawnPlayers()
     {
+        // A new client does not have any characters spawned
         if (playerCharacterList.Count <= 0)
         {
             foreach (Player p in latestGameState.players)
@@ -123,9 +130,10 @@ public class NetworkMan : MonoBehaviour
                 playerCharacterList.Add(p.id, playerCharacter);
             }
         }
+        // Existing client with mismatched list of players and characters
         else if (playerCharacterList.Count < latestGameState.players.Length)
         {
-            Vector3 spawnPosition = new Vector3(playerCharacterList.Count, 0);
+            Vector3 spawnPosition = new Vector3(UnityEngine.Random.Range(0, 5), UnityEngine.Random.Range(0, 5));
             playerCharacter = Instantiate(playerCharacterPrefab, spawnPosition, transform.rotation);
             playerCharacter.GetComponent<PlayerNetworkID>().id = newPlayer.player.id;
             playerCharacterList.Add(newPlayer.player.id, playerCharacter);
@@ -140,8 +148,17 @@ public class NetworkMan : MonoBehaviour
         }
     }
 
-    void DestroyPlayers(){
-
+    void DestroyPlayers()
+    {
+        // There are more characters than there are players, people have been dropped
+        if (playerCharacterList.Count > latestGameState.players.Length)
+        {
+            foreach (Player p in latestDroppedPlayers.players)
+            {
+                Destroy(playerCharacterList[p.id]);
+                playerCharacterList.Remove(p.id);
+            }
+        }
     }
     
     void HeartBeat(){
