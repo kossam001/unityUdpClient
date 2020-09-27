@@ -14,8 +14,8 @@ public class NetworkMan : MonoBehaviour
     {
         udp = new UdpClient();
 
-        udp.Connect("3.130.200.122", 12345);
-        //udp.Connect("localhost", 12345);
+        //udp.Connect("3.130.200.122", 12345);
+        udp.Connect("localhost", 12345);
 
         Byte[] sendBytes = Encoding.ASCII.GetBytes("connect"); // Send connect message to server
       
@@ -45,13 +45,14 @@ public class NetworkMan : MonoBehaviour
     [Serializable]
     public class Player{
         [Serializable]
-        public struct receivedColor{
-            public float R;
-            public float G;
-            public float B;
+        public struct receivedPosition{
+            public float X;
+            public float Y;
+            public float Z;
         }
+
         public string id;
-        public receivedColor color;
+        public receivedPosition position;
     }
 
     [Serializable]
@@ -144,7 +145,7 @@ public class NetworkMan : MonoBehaviour
         foreach (Player p in latestGameState.players)
         {
             playerCharacterList[p.id].GetComponent<PlayerNetworkID>().id = p.id;
-            playerCharacterList[p.id].GetComponent<MeshRenderer>().material.color = new Color(p.color.R, p.color.G, p.color.B);
+            //playerCharacterList[p.id].GetComponent<MeshRenderer>().material.color = new Color(p.color.R, p.color.G, p.color.B);
         }
     }
 
@@ -162,7 +163,8 @@ public class NetworkMan : MonoBehaviour
     }
     
     void HeartBeat(){
-        Byte[] sendBytes = Encoding.ASCII.GetBytes("heartbeat");
+        Byte[] sendBytes = Encoding.ASCII.GetBytes("heartbeat;position=" + 
+            transform.position.x + "," + transform.position.y + "," + transform.position.z + ";");
         udp.Send(sendBytes, sendBytes.Length);
     }
 
