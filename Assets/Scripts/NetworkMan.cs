@@ -117,19 +117,27 @@ public class NetworkMan : MonoBehaviour
     private Dictionary<string, GameObject> playerCharacterList = new Dictionary<string, GameObject>();
     public GameObject playerCharacterPrefab;
     GameObject peerPlayerCharacter;
-    GameObject ownPlayerCharacter;
+    Player ownPlayerCharacter;
 
     void SpawnPlayers()
     {
         // A new client does not have any characters spawned
         if (playerCharacterList.Count <= 0)
         {
+            // The character that was just added is the new client's character
+            ownPlayerCharacter = newPlayer.player;
+
             foreach (Player p in latestGameState.players)
             {
-                Vector3 spawnPosition = new Vector3(playerCharacterList.Count, 0);
-                ownPlayerCharacter = Instantiate(playerCharacterPrefab, spawnPosition, transform.rotation);
-                ownPlayerCharacter.GetComponent<PlayerNetworkID>().id = p.id;
-                playerCharacterList.Add(p.id, ownPlayerCharacter);
+                Vector3 spawnPosition = new Vector3(p.position.X, p.position.Y, p.position.Z);
+                peerPlayerCharacter = Instantiate(playerCharacterPrefab, spawnPosition, transform.rotation);
+                peerPlayerCharacter.GetComponent<PlayerNetworkID>().id = p.id;
+                playerCharacterList.Add(p.id, peerPlayerCharacter);
+            }
+
+            if (playerCharacterList.ContainsKey(ownPlayerCharacter.id))
+            {
+                playerCharacterList[ownPlayerCharacter.id].AddComponent<CharacterMovement>();
             }
         }
         // Existing client with mismatched list of players and characters
@@ -145,8 +153,13 @@ public class NetworkMan : MonoBehaviour
     void UpdatePlayers(){
         foreach (Player p in latestGameState.players)
         {
-            playerCharacterList[p.id].GetComponent<PlayerNetworkID>().id = p.id;
-            //playerCharacterList[p.id].GetComponent<MeshRenderer>().material.color = new Color(p.color.R, p.color.G, p.color.B);
+            // Update position of every other character
+            if (p.id != ownPlayerCharacter.id)
+            {
+                playerCharacterList[p.id].GetComponent<PlayerNetworkID>().id = p.id;
+                //playerCharacterList[p.id].GetComponent<MeshRenderer>().material.color = new Color(p.color.R, p.color.G, p.color.B);
+                playerCharacterList[p.id].transform.position = new Vector3(p.position.X, p.position.Y, p.position.Z);
+            }
         }
     }
 
@@ -164,8 +177,11 @@ public class NetworkMan : MonoBehaviour
     }
     
     void HeartBeat(){
+        // Get associated character with this client
+        GameObject character = playerCharacterList[ownPlayerCharacter.id];
+
         Byte[] sendBytes = Encoding.ASCII.GetBytes("heartbeat;position=" +
-            ownPlayerCharacter.transform.position.x + "," + ownPlayerCharacter.transform.position.y + "," + ownPlayerCharacter.transform.position.z + ";");
+            character.transform.position.x + "," + character.transform.position.y + "," + character.transform.position.z + ";");
         udp.Send(sendBytes, sendBytes.Length);
     }
 
