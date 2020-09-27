@@ -116,7 +116,8 @@ public class NetworkMan : MonoBehaviour
 
     private Dictionary<string, GameObject> playerCharacterList = new Dictionary<string, GameObject>();
     public GameObject playerCharacterPrefab;
-    GameObject playerCharacter;
+    GameObject peerPlayerCharacter;
+    GameObject ownPlayerCharacter;
 
     void SpawnPlayers()
     {
@@ -126,18 +127,18 @@ public class NetworkMan : MonoBehaviour
             foreach (Player p in latestGameState.players)
             {
                 Vector3 spawnPosition = new Vector3(playerCharacterList.Count, 0);
-                playerCharacter = Instantiate(playerCharacterPrefab, spawnPosition, transform.rotation);
-                playerCharacter.GetComponent<PlayerNetworkID>().id = p.id;
-                playerCharacterList.Add(p.id, playerCharacter);
+                ownPlayerCharacter = Instantiate(playerCharacterPrefab, spawnPosition, transform.rotation);
+                ownPlayerCharacter.GetComponent<PlayerNetworkID>().id = p.id;
+                playerCharacterList.Add(p.id, ownPlayerCharacter);
             }
         }
         // Existing client with mismatched list of players and characters
         else if (playerCharacterList.Count < latestGameState.players.Length)
         {
             Vector3 spawnPosition = new Vector3(UnityEngine.Random.Range(0, 5), UnityEngine.Random.Range(0, 5));
-            playerCharacter = Instantiate(playerCharacterPrefab, spawnPosition, transform.rotation);
-            playerCharacter.GetComponent<PlayerNetworkID>().id = newPlayer.player.id;
-            playerCharacterList.Add(newPlayer.player.id, playerCharacter);
+            peerPlayerCharacter = Instantiate(playerCharacterPrefab, spawnPosition, transform.rotation);
+            peerPlayerCharacter.GetComponent<PlayerNetworkID>().id = newPlayer.player.id;
+            playerCharacterList.Add(newPlayer.player.id, peerPlayerCharacter);
         }
     }
 
@@ -163,8 +164,8 @@ public class NetworkMan : MonoBehaviour
     }
     
     void HeartBeat(){
-        Byte[] sendBytes = Encoding.ASCII.GetBytes("heartbeat;position=" + 
-            transform.position.x + "," + transform.position.y + "," + transform.position.z + ";");
+        Byte[] sendBytes = Encoding.ASCII.GetBytes("heartbeat;position=" +
+            ownPlayerCharacter.transform.position.x + "," + ownPlayerCharacter.transform.position.y + "," + ownPlayerCharacter.transform.position.z + ";");
         udp.Send(sendBytes, sendBytes.Length);
     }
 
