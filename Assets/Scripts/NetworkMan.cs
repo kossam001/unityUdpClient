@@ -23,7 +23,7 @@ public class NetworkMan : MonoBehaviour
 
         udp.BeginReceive(new AsyncCallback(OnReceived), udp);
 
-        InvokeRepeating("HeartBeat", 1, 1); // Every second run heartbeat
+        InvokeRepeating("HeartBeat", 1, 0.03f); // Every second run heartbeat
     }
 
     void OnDestroy(){
@@ -117,7 +117,7 @@ public class NetworkMan : MonoBehaviour
     private Dictionary<string, GameObject> playerCharacterList = new Dictionary<string, GameObject>();
     public GameObject playerCharacterPrefab;
     GameObject peerPlayerCharacter;
-    Player ownPlayerCharacter;
+    Player ownPlayerCharacter = null;
 
     void SpawnPlayers()
     {
@@ -158,7 +158,9 @@ public class NetworkMan : MonoBehaviour
             {
                 playerCharacterList[p.id].GetComponent<PlayerNetworkID>().id = p.id;
                 //playerCharacterList[p.id].GetComponent<MeshRenderer>().material.color = new Color(p.color.R, p.color.G, p.color.B);
-                playerCharacterList[p.id].transform.position = new Vector3(p.position.X, p.position.Y, p.position.Z);
+                //playerCharacterList[p.id].transform.position = new Vector3(p.position.X, p.position.Y, p.position.Z);
+                Vector3 diff = transform.TransformDirection(new Vector3(p.position.X, p.position.Y, p.position.Z) - playerCharacterList[p.id].transform.position);
+                playerCharacterList[p.id].GetComponent<CharacterController>().Move(diff * Time.deltaTime);
             }
         }
     }
@@ -177,12 +179,16 @@ public class NetworkMan : MonoBehaviour
     }
     
     void HeartBeat(){
-        // Get associated character with this client
-        GameObject character = playerCharacterList[ownPlayerCharacter.id];
 
-        Byte[] sendBytes = Encoding.ASCII.GetBytes("heartbeat;position=" +
-            character.transform.position.x + "," + character.transform.position.y + "," + character.transform.position.z + ";");
-        udp.Send(sendBytes, sendBytes.Length);
+        if (ownPlayerCharacter != null)
+        {
+            GameObject character = playerCharacterList[ownPlayerCharacter.id];
+
+            Byte[] sendBytes = Encoding.ASCII.GetBytes("heartbeat;position=" +
+                    character.transform.position.x + "," + character.transform.position.y + "," + character.transform.position.z + ";");
+            udp.Send(sendBytes, sendBytes.Length);
+            udp.Send(sendBytes, sendBytes.Length);
+        }
     }
 
     void Update(){
