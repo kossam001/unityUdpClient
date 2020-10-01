@@ -14,8 +14,8 @@ public class NetworkMan : MonoBehaviour
     {
         udp = new UdpClient();
 
-        //udp.Connect("3.130.200.122", 12345);
-        udp.Connect("localhost", 12345);
+        udp.Connect("3.130.200.122", 12345);
+        //udp.Connect("localhost", 12345);
 
         Byte[] sendBytes = Encoding.ASCII.GetBytes("connect"); // Send connect message to server
       
@@ -23,7 +23,7 @@ public class NetworkMan : MonoBehaviour
 
         udp.BeginReceive(new AsyncCallback(OnReceived), udp);
 
-        InvokeRepeating("HeartBeat", 1, 0.03f); // Every second run heartbeat
+        InvokeRepeating("HeartBeat", 1, 0.03f); // Every 0.03 seconds run heartbeat
     }
 
     void OnDestroy(){
@@ -157,8 +157,6 @@ public class NetworkMan : MonoBehaviour
             if (p.id != ownPlayerCharacter.id)
             {
                 playerCharacterList[p.id].GetComponent<PlayerNetworkID>().id = p.id;
-                //playerCharacterList[p.id].GetComponent<MeshRenderer>().material.color = new Color(p.color.R, p.color.G, p.color.B);
-                //playerCharacterList[p.id].transform.position = new Vector3(p.position.X, p.position.Y, p.position.Z);
                 Vector3 diff = transform.TransformDirection(new Vector3(p.position.X, p.position.Y, p.position.Z) - playerCharacterList[p.id].transform.position);
                 playerCharacterList[p.id].GetComponent<CharacterController>().Move(diff * Time.deltaTime);
             }
